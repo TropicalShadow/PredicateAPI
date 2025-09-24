@@ -11,6 +11,7 @@ import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.command.PermissionLevelSource;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.lang.reflect.Field;
@@ -30,7 +31,7 @@ public final class PermissionPredicate extends AbstractPredicate {
             luckPermsUserField = ServerPlayerEntity.class.getDeclaredField("luckperms$user");
             luckPermsUserField.setAccessible(true);
         } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
+                        throw new IllegalStateException("Failed to access LuckPerms user field - ensure LuckPerms is installed and compatible", e);
         }
     }
 
@@ -54,7 +55,21 @@ public final class PermissionPredicate extends AbstractPredicate {
     @Override
     public PredicateResult<?> test(PredicateContext context) {
         final ServerCommandSource source = context.source();
-        if (context.hasGameProfile()) {
+
+
+        boolean shouldBeAggressiveLuckPerms = false;
+        try{
+            if(context.hasPlayer()){
+                var lpUser = luckPermsUserField.get(context.player());
+                shouldBeAggressiveLuckPerms = lpUser == null;
+            }
+        } catch (IllegalAccessException e) {
+            // log and ignore
+            Text errorMessage = Text.literal("Luckperms reflection failed: " + e.getMessage());
+            context.server().getCommandSource().sendError(errorMessage);
+        }
+
+        if (context.hasGameProfile() && (!context.hasPlayer() || shouldBeAggressiveLuckPerms)) {
             final GameProfile profile = context.gameProfile();
             assert profile != null;
 
