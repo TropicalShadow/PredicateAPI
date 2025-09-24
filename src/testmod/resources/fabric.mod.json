@@ -20,6 +20,9 @@
       "eu.pb4.placeholderstest.TestMod"
     ]
   },
+  "mixins": [
+    "styledchat.mixins.json"
+  ],
 
   "depends": {
   }
